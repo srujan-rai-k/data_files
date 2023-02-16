@@ -1,0 +1,44 @@
+hive> use <your database>
+hive> set hive.cli.print.current.db=true;
+
+hive> create table NYSEdailyhead (stexchange String,stock_symbol String,stock_date String,stock_price_open double, stock_price_high double, stock_price_low double, stock_price_close double, stock_volume int, stock_price_adj_close double) row format delimited fields terminated by "\t" lines terminated by "\n" tblproperties("skip.header.line.count"="1");
+
+hive> load data local inpath '/home/<your-login-id>/<sub-dir>/NYSE_daily' into table nysedailyhead;
+
+OR
+Instead of load command in Hive you can use hadoop put command from $ prompt as below.
+
+$ hadoop fs -put NYSE_daily /user/hive/warehouse/nyse_ravia.db/nysedailyhead
+
+$ wc -l NYSE_daily
+
+hive> select count(*) from nysedailyhead;
+
+-----------------------------------------
+
+Other formats:
+
+hive> create table NYSEdailypq
+(stexchange String,stock_symbol String,stock_date String,stock_price_open double, stock_price_high double, stock_price_low double, stock_price_close double, stock_volume double, stock_price_adj_close double)
+STORED AS PARQUET;
+
+hive> describe formatted nysedailypq; -- Note the serde properties
+
+hive> insert into nysedailypq select * from nysedaily;
+
+$ hadoop fs -ls /user/hive/warehouse/nyse_ravi.db/nysedailypq/
+
+$ hadoop fs -ls /user/hive/warehouse/nyse_ravi.db/nysedaily/
+
+-- Note the file size difference
+
+hive> create table nysedividendspq stored as parquet as select * from nysedividends;
+
+-- The command below auto-generates and shows the create table command of the specified table
+
+hive> show create table <tablename>;
+-----
+
+select a.stock_symbol, a.stock_price_close, b.dividends, b.divstock_date from nysedaily a join nysedividends b on a.stock_symbol=b.divstock_symbol AND a.stock_date=b.divstock_date where a.stock_price_close>=20;
+
+select a.stock_symbol, a.stock_price_close, b.dividends, b.divstock_date from nysedailypq a join nysedividendspq b on a.stock_symbol=b.divstock_symbol AND a.stock_date=b.divstock_date where a.stock_price_close>=20;
